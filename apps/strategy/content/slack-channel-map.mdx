@@ -1,0 +1,107 @@
+---
+title: Slack チャンネルマップ
+description: SOCT社 Slack ワークスペースのチャンネル分類（アクティブ度 × 会話重要度の2軸評価）
+---
+
+# Slack チャンネルマップ
+
+> **調査日:** 2026-03-19（v3スクリプト）
+> **ワークスペース:** SOCT（soct.slack.com）
+> **対象:** 非アーカイブ 104ch → 参加中 102ch
+> **判定:** 最新20件を取得し、直近30日以内のメッセージをクライアント側でフィルタ
+
+### 分類基準
+
+| 軸 | 判定方法 |
+|:---|:---|
+| **アクティブ度** | 直近30日の**人間のメッセージ数**（入退出除外、limit=20） |
+| **重要度** | 会話サンプルの内容分析 |
+
+> **注意:** limit=20のため、高アクティブなチャンネルの実数は20以上の可能性あり
+
+> **再スキャン:** `node apps/tools/classify-slack-channels.js --days 30`
+
+---
+
+## 🔴 最重要（アクティブ × 重要な会話）
+
+| チャンネル | ID | 人間 | Bot | 会話の特徴 |
+|:---|:---|---:|---:|:---|
+| `03_はなえみダイレクト` | C077R29HKNF | 20 | 0 | はなえみ事業ヒアリング・物件探し |
+| `03_dev_rakuco` | C0A0A0CESF3 | 19 | 0 | **Rakuco開発。** 不具合対応・リリース判断 |
+| `03_cs_rakuco` | C0911EWSX3P | 17 | 2 | **CS最重要。** 顧客フォロー・解約対応 |
+| `02_plan_rakuco-learning` | C074XL42YNM | 16 | 0 | eラーニング企画・スライド生成 |
+| `03_pj_golfperformance` | C0ABMG2SYJE | 15 | 4 | 見積もり・LINE運用・請求対応 |
+| `03_pj_nagoya` | C09K0DJ4CMS | 14 | 0 | 名古屋PJ |
+| `ext_op_innojin_soct` | C08J9778FSM | 10 | 0 | イノジン運用連携・オンライン資格確認 |
+| `03_pj_nishimuraasahi` | C02S5C19RRA | 10 | 0 | 西村麻旭PJ。請求・開発議論 |
+| `00_八木さん報告用` | C08KZQDFE9L | 9 | 11 | 日次報告（テレアポ・商談予定） |
+| `03_pj_rakuco` | C021AQUT63D | 8 | 12 | Rakucoプロジェクト意思決定 |
+| `03_spec_rakuco` | C0A475EM1MK | 7 | 0 | Rakuco仕様策定・報酬改定対応 |
+| `00_ext_venture_support` | C04F1CQ7TD3 | 6 | 0 | 給与明細・勤怠確認・就労証明書 |
+| `00_general` | GN4DBD3G9 | 6 | 0 | 経理・請求・源泉徴収 |
+| `00_soct_core` | G01M394J98S | 6 | 0 | 請求確認MTG・社内連絡 |
+| `04_sales_rakuco` | C02MC3ENJMB | 5 | 15 | **営業重要。** アポ報告・商談 |
+| `02_plan_rakuco` | C048RM6J6BD | 5 | 14 | Rakuco事業計画・方針決定 |
+| `ext_innojin_sc_soct` | C04JRJB8JCS | 5 | 0 | 定例打ち合わせ |
+| `99_有料職業紹介業` | C0ABMKV0WMC | 5 | 0 | 物件・請求書・申請手続き |
+| `00_山田さん報告用` | C07KLJE857C | 5 | 15 | 日次報告（CS定例・リリース） |
+
+---
+
+## 🟢 低優先（低アクティブ × 通常の会話）
+
+| チャンネル | ID | 人間 | Bot | 会話の特徴 |
+|:---|:---|---:|---:|:---|
+| `03_pj_innojin` | C04HRSXR0UR | 4 | 0 | 請求金額・問い合わせ |
+| `ext_spec_nishimuraasahi_soct` | C032CCEBT45 | 3 | 0 | 外部連携の開発状況確認 |
+| `00_ext_郵送物_vs` | C07R17HGK18 | 3 | 0 | 郵送物の受取確認 |
+| `03_pj_開業` | C094ZE77BKM | 3 | 0 | 給与・作業連絡 |
+| `03_pj_rigna` | GP3KX9ELQ | 3 | 0 | 広告運用見積もり・請求 |
+| `04_セミナー` | C06GF4XFVGA | 2 | 14 | セミナーメール送信報告 |
+| `01_sales_kuki-san` | C08J9QMG7S9 | 2 | 0 | 営業個別（障害者雇用マッチング） |
+| `03_pj_外部顧問` | C094S2GR38X | 2 | 0 | 新サービス打ち合わせ相談 |
+| `ext_sharedine_soct` | C0AC50D4SPM | 2 | 0 | 外部連携リリース報告 |
+| `03_pj_sharedine` | C0ALY14ANTF | 1 | 0 | 契約締結・請求連絡 |
+| `03_ad_soct` | C0AM907BWJW | 1 | 0 | 自社広告の議論 |
+| `02_plan_rakuco-academy` | C0A1A73L42G | 1 | 0 | Rakucoアカデミー企画 |
+
+---
+
+## 🤖 Bot通知専用（データソース）
+
+| チャンネル | ID | Bot/20件中 | 用途 |
+|:---|:---|---:|:---|
+| `noti_rakuco_billing` | C043ZFX6RL1 | 20 | **Rakuco決済通知** |
+| `noti_rakuco_kintai` | C0A54QW4RMK | 20 | Rakuco勤怠 |
+| `00_connect_rakuco-sales` | C09G8TUN4KU | 20 | 営業Connect |
+| `00_シフト通知` | C08N7P5714G | 20 | シフト変更 |
+| `00_connect_rakuco-cs` | C090UPLGQDN | 20 | CSのConnect |
+| `noti_はなえみ` | G011D0MD353 | 20 | はなえみ通知 |
+| `noti_invoice-soct` | G01PHJYULUF | 20 | SOCT請求書 |
+| `noti_formrun` | G0124CPGWDV | 18 | フォーム回答 |
+| `00_connect_soct` | C08FTJW5P4Z | 8 | SOCT Connect |
+| `00_inbound_rakuco-cs` | C0A4UUAHJ93 | 4 | CSインバウンド |
+| `noti_contract` | G01PVA1PV0V | 2 | 契約通知 |
+| `noti_coala` | C021UKRA606 | 1 | Coala通知 |
+
+---
+
+## ⚪ 休眠（30日間メッセージなし）
+
+> **60チャンネルが休眠状態。** アーカイブ候補として定期的にレビュー推奨。
+
+---
+
+## 月次分析チェックリスト
+
+| 順位 | チャンネル | 人間/Bot | 確認目的 |
+|---:|:---|:---|:---|
+| 1 | `03_cs_rakuco` | 17/2 | 解約理由・顧客クレーム・CS対応 |
+| 2 | `04_sales_rakuco` | 5/15 | 営業パイプライン・商談の定性情報 |
+| 3 | `noti_rakuco_billing` | 0/20 | 決済成功/失敗パターン |
+| 4 | `02_plan_rakuco` | 5/14 | 事業方針変更・KPI目標 |
+| 5 | `03_pj_rakuco` | 8/12 | プロジェクト進行・タスク状況 |
+| 6 | `03_dev_rakuco` | 19/0 | リリース・技術課題 |
+| 7 | `02_plan_rakuco-learning` | 16/0 | eラーニング企画進捗 |
+| 8 | `03_はなえみダイレクト` | 20/0 | はなえみ事業マイルストーン |

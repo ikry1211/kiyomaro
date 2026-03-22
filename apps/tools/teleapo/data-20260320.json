@@ -1,0 +1,394 @@
+{
+  "metadata": {
+    "fetchedAt": "2026-03-20T08:18:40.232Z",
+    "period": {
+      "from": "2026-03-13T08:18:35.000Z",
+      "to": "2026-03-20T08:18:35.000Z"
+    },
+    "totalMessages": 2024,
+    "totalConversations": 599
+  },
+  "agentSummary": {
+    "カワカミ": {
+      "name": "カワカミ",
+      "total": 32,
+      "results": {
+        "他システム導入済み": 5,
+        "不要（断り）": 4,
+        "担当者不在": 12,
+        "その他": 7,
+        "再架電予定": 3,
+        "自社対応済み": 1
+      },
+      "sentimentCount": 32,
+      "turnsTotal": 712,
+      "rejectionPatterns": {
+        "即引き下がり": 5,
+        "その他の対応": 7,
+        "料金訴求": 1
+      },
+      "explanationDepths": {
+        "サービス名言及": 5,
+        "カテゴリのみ": 19,
+        "課題解決型": 7,
+        "なし": 1
+      },
+      "productMentions": {
+        "price": 8,
+        "feature": 7,
+        "caseStudy": 6
+      },
+      "avgCustSentiment": {
+        "POSITIVE": 0.07,
+        "NEUTRAL": 0.87,
+        "NEGATIVE": 0.06
+      },
+      "avgAgtSentiment": {
+        "POSITIVE": 0.08,
+        "NEUTRAL": 0.81,
+        "NEGATIVE": 0.1
+      },
+      "avgTurns": 22.3,
+      "avgAgentMsgLength": 45
+    },
+    "不明": {
+      "name": "不明",
+      "total": 80,
+      "results": {
+        "留守電・自動応答": 44,
+        "自動ガイダンス": 5,
+        "FAX転送": 1,
+        "再架電予定": 2,
+        "その他": 16,
+        "担当者不在": 9,
+        "不要（断り）": 2,
+        "他システム導入済み": 1
+      },
+      "sentimentCount": 80,
+      "turnsTotal": 245,
+      "rejectionPatterns": {
+        "即引き下がり": 2,
+        "その他の対応": 2
+      },
+      "explanationDepths": {
+        "なし": 76,
+        "カテゴリのみ": 3,
+        "課題解決型": 1
+      },
+      "productMentions": {
+        "price": 1,
+        "feature": 0,
+        "caseStudy": 1
+      },
+      "avgCustSentiment": {
+        "POSITIVE": 0.02,
+        "NEUTRAL": 0.55,
+        "NEGATIVE": 0.43
+      },
+      "avgAgtSentiment": {
+        "POSITIVE": 0.02,
+        "NEUTRAL": 0.17,
+        "NEGATIVE": 0.02
+      },
+      "avgTurns": 3.1,
+      "avgAgentMsgLength": 8
+    },
+    "鍵谷": {
+      "name": "鍵谷",
+      "total": 103,
+      "results": {
+        "再架電予定": 17,
+        "不要（断り）": 18,
+        "アポ獲得/興味あり": 1,
+        "担当者不在": 54,
+        "他システム導入済み": 6,
+        "その他": 4,
+        "FAX転送": 3
+      },
+      "sentimentCount": 103,
+      "turnsTotal": 2071,
+      "rejectionPatterns": {
+        "その他の対応": 23,
+        "即引き下がり": 12,
+        "比較提案": 1,
+        "料金訴求": 1
+      },
+      "explanationDepths": {
+        "カテゴリのみ": 97,
+        "なし": 5,
+        "サービス名言及": 1
+      },
+      "productMentions": {
+        "price": 1,
+        "feature": 0,
+        "caseStudy": 14
+      },
+      "avgCustSentiment": {
+        "POSITIVE": 0.1,
+        "NEUTRAL": 0.79,
+        "NEGATIVE": 0.11
+      },
+      "avgAgtSentiment": {
+        "POSITIVE": 0.2,
+        "NEUTRAL": 0.74,
+        "NEGATIVE": 0.06
+      },
+      "avgTurns": 20.1,
+      "avgAgentMsgLength": 28
+    },
+    "フジモト": {
+      "name": "フジモト",
+      "total": 112,
+      "results": {
+        "担当者不在": 43,
+        "再架電予定": 35,
+        "他システム導入済み": 14,
+        "不要（断り）": 20
+      },
+      "sentimentCount": 109,
+      "turnsTotal": 2378,
+      "rejectionPatterns": {
+        "即引き下がり": 19,
+        "その他の対応": 20
+      },
+      "explanationDepths": {
+        "カテゴリのみ": 73,
+        "サービス名言及": 27,
+        "課題解決型": 6,
+        "なし": 6
+      },
+      "productMentions": {
+        "price": 22,
+        "feature": 4,
+        "caseStudy": 13
+      },
+      "avgCustSentiment": {
+        "POSITIVE": 0.09,
+        "NEUTRAL": 0.83,
+        "NEGATIVE": 0.07
+      },
+      "avgAgtSentiment": {
+        "POSITIVE": 0.09,
+        "NEUTRAL": 0.83,
+        "NEGATIVE": 0.08
+      },
+      "avgTurns": 21.2,
+      "avgAgentMsgLength": 47
+    },
+    "日高": {
+      "name": "日高",
+      "total": 16,
+      "results": {
+        "再架電予定": 2,
+        "担当者不在": 4,
+        "その他": 5,
+        "不要（断り）": 2,
+        "アポ獲得/興味あり": 3
+      },
+      "sentimentCount": 16,
+      "turnsTotal": 460,
+      "rejectionPatterns": {
+        "即引き下がり": 2,
+        "その他の対応": 3
+      },
+      "explanationDepths": {
+        "カテゴリのみ": 11,
+        "課題解決型": 1,
+        "サービス名言及": 4
+      },
+      "productMentions": {
+        "price": 2,
+        "feature": 1,
+        "caseStudy": 0
+      },
+      "avgCustSentiment": {
+        "POSITIVE": 0.06,
+        "NEUTRAL": 0.87,
+        "NEGATIVE": 0.06
+      },
+      "avgAgtSentiment": {
+        "POSITIVE": 0.07,
+        "NEUTRAL": 0.86,
+        "NEGATIVE": 0.07
+      },
+      "avgTurns": 28.8,
+      "avgAgentMsgLength": 47
+    },
+    "石丸": {
+      "name": "石丸",
+      "total": 25,
+      "results": {
+        "不要（断り）": 3,
+        "その他": 3,
+        "アポ獲得/興味あり": 5,
+        "他システム導入済み": 1,
+        "担当者不在": 7,
+        "再架電予定": 4,
+        "留守電・自動応答": 2
+      },
+      "sentimentCount": 22,
+      "turnsTotal": 391,
+      "rejectionPatterns": {
+        "その他の対応": 3
+      },
+      "explanationDepths": {
+        "なし": 18,
+        "サービス名言及": 5,
+        "カテゴリのみ": 2
+      },
+      "productMentions": {
+        "price": 0,
+        "feature": 0,
+        "caseStudy": 1
+      },
+      "avgCustSentiment": {
+        "POSITIVE": 0.07,
+        "NEUTRAL": 0.75,
+        "NEGATIVE": 0.18
+      },
+      "avgAgtSentiment": {
+        "POSITIVE": 0.07,
+        "NEUTRAL": 0.87,
+        "NEGATIVE": 0.06
+      },
+      "avgTurns": 15.6,
+      "avgAgentMsgLength": 36
+    },
+    "野島": {
+      "name": "野島",
+      "total": 109,
+      "results": {
+        "担当者不在": 39,
+        "不要（断り）": 32,
+        "再架電予定": 19,
+        "その他": 9,
+        "他システム導入済み": 9,
+        "留守電・自動応答": 1
+      },
+      "sentimentCount": 102,
+      "turnsTotal": 3253,
+      "rejectionPatterns": {
+        "即引き下がり": 9,
+        "その他の対応": 41,
+        "比較提案": 2,
+        "課題ヒアリング": 2
+      },
+      "explanationDepths": {
+        "カテゴリのみ": 51,
+        "なし": 27,
+        "サービス名言及": 29,
+        "課題解決型": 2
+      },
+      "productMentions": {
+        "price": 10,
+        "feature": 0,
+        "caseStudy": 14
+      },
+      "avgCustSentiment": {
+        "POSITIVE": 0.08,
+        "NEUTRAL": 0.83,
+        "NEGATIVE": 0.08
+      },
+      "avgAgtSentiment": {
+        "POSITIVE": 0.04,
+        "NEUTRAL": 0.9,
+        "NEGATIVE": 0.07
+      },
+      "avgTurns": 29.8,
+      "avgAgentMsgLength": 33
+    },
+    "福田": {
+      "name": "福田",
+      "total": 122,
+      "results": {
+        "担当者不在": 76,
+        "不要（断り）": 30,
+        "FAX転送": 2,
+        "他システム導入済み": 8,
+        "再架電予定": 4,
+        "留守電・自動応答": 1,
+        "その他": 1
+      },
+      "sentimentCount": 117,
+      "turnsTotal": 2793,
+      "rejectionPatterns": {
+        "即引き下がり": 17,
+        "その他の対応": 17,
+        "比較提案": 2
+      },
+      "explanationDepths": {
+        "カテゴリのみ": 114,
+        "なし": 6,
+        "課題解決型": 2
+      },
+      "productMentions": {
+        "price": 3,
+        "feature": 0,
+        "caseStudy": 8
+      },
+      "avgCustSentiment": {
+        "POSITIVE": 0.08,
+        "NEUTRAL": 0.84,
+        "NEGATIVE": 0.08
+      },
+      "avgAgtSentiment": {
+        "POSITIVE": 0.1,
+        "NEUTRAL": 0.79,
+        "NEGATIVE": 0.09
+      },
+      "avgTurns": 22.9,
+      "avgAgentMsgLength": 83
+    }
+  },
+  "dailySummary": {
+    "2026/3/20": {
+      "total": 17,
+      "byAgent": {
+        "カワカミ": 10,
+        "不明": 7
+      }
+    },
+    "2026/3/19": {
+      "total": 158,
+      "byAgent": {
+        "鍵谷": 31,
+        "フジモト": 62,
+        "不明": 27,
+        "日高": 16,
+        "石丸": 2,
+        "野島": 20
+      }
+    },
+    "2026/3/18": {
+      "total": 159,
+      "byAgent": {
+        "石丸": 10,
+        "不明": 18,
+        "鍵谷": 33,
+        "フジモト": 50,
+        "福田": 38,
+        "カワカミ": 10
+      }
+    },
+    "2026/3/17": {
+      "total": 155,
+      "byAgent": {
+        "不明": 18,
+        "石丸": 12,
+        "鍵谷": 39,
+        "野島": 47,
+        "福田": 39
+      }
+    },
+    "2026/3/16": {
+      "total": 110,
+      "byAgent": {
+        "石丸": 1,
+        "福田": 45,
+        "野島": 42,
+        "不明": 10,
+        "カワカミ": 12
+      }
+    }
+  }
+}

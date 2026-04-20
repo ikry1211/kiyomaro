@@ -20,3 +20,6 @@ Thumbs.db
 
 # Gemini/AI
 .gemini/
+
+# 財務予測DB（バイナリ、SQLスクリプトから再生成可能）
+apps/strategy/data/forecast.db

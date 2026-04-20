@@ -1,0 +1,174 @@
+{
+  "_comment": "SOCT 3カ年財務予測モデル v1.0 (2026/4〜2029/3)",
+  "_updated": "2026-04-01",
+  "_dataSource": "Google Sheets「2025年度SOCT予算管理」+ 各事業計画",
+
+  "period": {
+    "start": "2026-04",
+    "months": 36
+  },
+
+  "initialState": {
+    "cash": 50934000,
+    "debt": {
+      "kouko": 21052750,
+      "other": 29588618,
+      "monthlyRepayment": {
+        "kouko": 321575,
+        "other": 490776
+      },
+      "interestRate": {
+        "kouko": 0.0211,
+        "other": 0.0365
+      }
+    },
+    "otherAssets": 7200000,
+    "rakucoCustomers": 104
+  },
+
+  "revenue": {
+    "outsourcing": {
+      "_comment": "受託保守 — InnoJin終了後の固定額",
+      "monthly": 1586160
+    },
+    "development": {
+      "_comment": "受託開発（Arukabe） — 2026/4〜9月のみ。10月以降ゼロ",
+      "monthly": 483840,
+      "endMonth": "2026-09"
+    },
+    "marketing": {
+      "_comment": "マーケティング事業（広告運用）",
+      "phases": [
+        { "from": "2026-04", "monthly": 845600 },
+        { "from": "2026-05", "monthly": 1018400 },
+        { "from": "2027-04", "monthly": 1200000, "_comment": "来期新規獲得開始" },
+        { "from": "2028-04", "monthly": 1800000, "_comment": "Layer2拡大目標" }
+      ]
+    },
+    "rakuco": {
+      "_comment": "Rakuco SaaS — 月額¥18,000/社",
+      "pricePerCustomer": 18000,
+      "growth": [
+        { "from": "2026-04", "perMonth": 2 },
+        { "from": "2026-10", "perMonth": 3 },
+        { "from": "2027-04", "perMonth": 3 },
+        { "from": "2028-04", "perMonth": 2, "_comment": "TAM天井に近づき鈍化" }
+      ],
+      "priceIncrease": {
+        "month": "2026-10",
+        "newPrice": 21000,
+        "enabled": false,
+        "_comment": "eラーニングが軌道に乗れば不要。シナリオ切替用"
+      },
+      "maSale": {
+        "month": "2027-06",
+        "enabled": false,
+        "salePrice": 120000000,
+        "_comment": "M&A売却シナリオ。enabledにすると売却月以降のRakuco収益がゼロになる"
+      }
+    },
+    "eLearning": {
+      "_comment": "はなえみラーニング — 2026/7課金開始",
+      "launchMonth": "2026-07",
+      "usersPerCustomer": 20,
+      "milestones": [
+        { "month": "2026-07", "customers": 10, "price": 400 },
+        { "month": "2026-10", "customers": 15, "price": 400 },
+        { "month": "2027-01", "customers": 22, "price": 400 },
+        { "month": "2027-03", "customers": 30, "price": 400 },
+        { "month": "2027-07", "customers": 30, "price": 800, "_comment": "初年度割引終了→定価移行" },
+        { "month": "2027-10", "customers": 50, "price": 800 },
+        { "month": "2028-01", "customers": 70, "price": 800 },
+        { "month": "2028-04", "customers": 90, "price": 800 },
+        { "month": "2028-07", "customers": 110, "price": 800 },
+        { "month": "2028-10", "customers": 130, "price": 800 },
+        { "month": "2029-01", "customers": 150, "price": 800 },
+        { "month": "2029-03", "customers": 160, "price": 800 }
+      ]
+    },
+    "tetraLMS": {
+      "_comment": "Tetra LMS プラットフォーム手数料（テナント課金）",
+      "milestones": [
+        { "month": "2026-10", "monthly": 15000, "_comment": "テナント#2（保育園コンサル）" },
+        { "month": "2027-01", "monthly": 78800, "_comment": "テナント#2のフル運用" },
+        { "month": "2027-07", "monthly": 120000, "_comment": "テナント#3" },
+        { "month": "2028-01", "monthly": 180000, "_comment": "テナント#3-4" },
+        { "month": "2028-07", "monthly": 250000, "_comment": "テナント#4-5" },
+        { "month": "2029-01", "monthly": 350000, "_comment": "TAM調査後に判断" }
+      ]
+    },
+    "hanaemiDirect": {
+      "_comment": "はなえみダイレクト — Q3ローンチ、保守的見通し",
+      "milestones": [
+        { "month": "2027-01", "monthly": 0, "_comment": "ローンチ直後" },
+        { "month": "2027-07", "monthly": 50000 },
+        { "month": "2028-01", "monthly": 100000 },
+        { "month": "2028-07", "monthly": 200000 },
+        { "month": "2029-01", "monthly": 300000 }
+      ]
+    }
+  },
+
+  "costs": {
+    "outsourcing": {
+      "_comment": "受託事業の変動費+固定費",
+      "variableCosts": 1725333,
+      "phases": [
+        { "from": "2026-04", "monthly": 1725333 },
+        { "from": "2026-10", "monthly": 1517973, "_comment": "受託開発(Arukabe)終了で原価減" }
+      ],
+      "fixedCosts": 238050
+    },
+    "rakuco": {
+      "_comment": "Rakucoの変動費+販管費。顧客数に応じて一部変動",
+      "variableBase": 1357176,
+      "variablePerCustomer": 1200,
+      "salesCosts": [
+        { "from": "2026-04", "monthly": 769200 },
+        { "from": "2026-05", "monthly": 677700 },
+        { "from": "2026-12", "monthly": 600450 },
+        { "from": "2028-04", "monthly": 650000, "_comment": "営業増員想定" }
+      ]
+    },
+    "eLearning": {
+      "_comment": "eラーニング関連コスト（営業・CS・サーバー）。スケールに応じて増加",
+      "phases": [
+        { "from": "2026-04", "monthly": 150000, "_comment": "藤本人件費のみ" },
+        { "from": "2027-04", "monthly": 380000, "_comment": "+CS1名+サーバー増" },
+        { "from": "2028-04", "monthly": 750000, "_comment": "+CS+営業2人目+サーバー" }
+      ],
+      "startMonth": "2026-04"
+    },
+    "hanaemiDirect": {
+      "_comment": "はなえみダイレクト開発・運用コスト",
+      "phases": [
+        { "from": "2026-07", "monthly": 100000, "_comment": "外部開発者" },
+        { "from": "2027-04", "monthly": 100000, "_comment": "保守運用" }
+      ]
+    },
+    "marketingExpansion": {
+      "_comment": "マーケティング事業拡大のための広告投資（粗利25%ルール）",
+      "phases": [
+        { "from": "2027-04", "monthly": 100000 },
+        { "from": "2028-04", "monthly": 200000 }
+      ]
+    },
+    "corporateTax": {
+      "_comment": "法人税・住民税・事業税（経常利益がプラスの場合のみ）",
+      "rate": 0.30
+    },
+    "companyFixed": {
+      "_comment": "全社固定費（顧問料・賃借料・経費等）",
+      "monthly": 535000
+    },
+    "executiveFixed": {
+      "_comment": "役員固定費（社宅・社有車・報酬）",
+      "monthly": 910100
+    },
+    "interest": {
+      "_comment": "支払利息 — 負債残高に比例して減少。初期値から線形近似",
+      "initial": 123246,
+      "monthlyDecrease": 1000
+    }
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "Rie Kagitani": {
+    "email": "hanaemi.sales.kagitani@gmail.com",
+    "calls": 389,
+    "avgDuration": 63,
+    "appointmentCount": 6,
+    "appointmentRate": 1.5,
+    "avgTurns": 15.9,
+    "avgSelfUtteranceLength": 26.8,
+    "medianSelfUtteranceLength": 26.9,
+    "avgQuestions": 2.2,
+    "avgGatekeeperQuestions": 0.8,
+    "avgClosingQuestions": 0.5,
+    "refusalCount": 109,
+    "refusalContinuationRate": 84.4,
+    "avgSentiment": 0,
+    "sentimentDegradingRate": 22.1,
+    "sentimentTrends": {
+      "improving": 35,
+      "flat": 263,
+      "degrading": 86,
+      "unknown": 5
+    },
+    "outcomes": {
+      "other": 24,
+      "follow_up": 174,
+      "not_reached": 68,
+      "refused": 117,
+      "appointment_set": 6
+    },
+    "directions": {
+      "outbound": 389,
+      "inbound": 0
+    },
+    "hourDistribution": {
+      "9時": 46,
+      "10時": 71,
+      "11時": 78,
+      "12時": 45,
+      "13時": 70,
+      "14時": 54,
+      "15時": 20,
+      "16時": 5
+    }
+  },
+  "Mako Fujimoto": {
+    "email": "mako.f.081211@gmail.com",
+    "calls": 379,
+    "avgDuration": 83,
+    "appointmentCount": 6,
+    "appointmentRate": 1.6,
+    "avgTurns": 17.4,
+    "avgSelfUtteranceLength": 38.4,
+    "medianSelfUtteranceLength": 35.9,
+    "avgQuestions": 2.2,
+    "avgGatekeeperQuestions": 1.3,
+    "avgClosingQuestions": 0.5,
+    "refusalCount": 61,
+    "refusalContinuationRate": 93.4,
+    "avgSentiment": 0.09,
+    "sentimentDegradingRate": 15,
+    "sentimentTrends": {
+      "improving": 56,
+      "flat": 264,
+      "degrading": 57,
+      "unknown": 2
+    },
+    "outcomes": {
+      "refused": 90,
+      "follow_up": 183,
+      "other": 47,
+      "not_reached": 53,
+      "appointment_set": 6
+    },
+    "directions": {
+      "outbound": 379,
+      "inbound": 0
+    },
+    "hourDistribution": {
+      "9時": 68,
+      "10時": 83,
+      "11時": 81,
+      "12時": 38,
+      "13時": 70,
+      "14時": 39
+    }
+  },
+  "Yukiko Fukuda": {
+    "email": "lo.s.y.m.5ma7o.ve.ty1128@gmail.com",
+    "calls": 377,
+    "avgDuration": 117,
+    "appointmentCount": 5,
+    "appointmentRate": 1.3,
+    "avgTurns": 18.3,
+    "avgSelfUtteranceLength": 53.6,
+    "medianSelfUtteranceLength": 50,
+    "avgQuestions": 1.9,
+    "avgGatekeeperQuestions": 1.1,
+    "avgClosingQuestions": 1,
+    "refusalCount": 102,
+    "refusalContinuationRate": 88.2,
+    "avgSentiment": 0.11,
+    "sentimentDegradingRate": 26,
+    "sentimentTrends": {
+      "improving": 74,
+      "flat": 204,
+      "degrading": 98,
+      "unknown": 1
+    },
+    "outcomes": {
+      "follow_up": 172,
+      "refused": 126,
+      "other": 26,
+      "not_reached": 48,
+      "appointment_set": 5
+    },
+    "directions": {
+      "outbound": 377,
+      "inbound": 0
+    },
+    "hourDistribution": {
+      "9時": 74,
+      "10時": 97,
+      "11時": 83,
+      "12時": 73,
+      "13時": 49,
+      "14時": 1
+    }
+  },
+  "Yuui Nojima": {
+    "email": "hanaemi.sales.nojima@gmail.com",
+    "calls": 121,
+    "avgDuration": 121,
+    "appointmentCount": 4,
+    "appointmentRate": 3.3,
+    "avgTurns": 27,
+    "avgSelfUtteranceLength": 32.4,
+    "medianSelfUtteranceLength": 29.6,
+    "avgQuestions": 3.3,
+    "avgGatekeeperQuestions": 0.8,
+    "avgClosingQuestions": 1.5,
+    "refusalCount": 41,
+    "refusalContinuationRate": 95.1,
+    "avgSentiment": 0.01,
+    "sentimentDegradingRate": 23.1,
+    "sentimentTrends": {
+      "improving": 13,
+      "flat": 80,
+      "degrading": 28,
+      "unknown": 0
+    },
+    "outcomes": {
+      "other": 8,
+      "not_reached": 21,
+      "follow_up": 62,
+      "refused": 26,
+      "appointment_set": 4
+    },
+    "directions": {
+      "outbound": 121,
+      "inbound": 0
+    },
+    "hourDistribution": {
+      "9時": 32,
+      "10時": 27,
+      "11時": 18,
+      "12時": 16,
+      "13時": 21,
+      "14時": 7
+    }
+  }
+}

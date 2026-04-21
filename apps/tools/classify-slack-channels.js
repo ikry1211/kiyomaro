@@ -16,8 +16,11 @@
 //   node apps/tools/classify-slack-channels.js --format json
 // ============================================================
 
-const TOKEN = process.env.SLACK_USER_TOKEN
-  || 'REDACTED_SLACK_TOKEN';
+const TOKEN = process.env.SLACK_USER_TOKEN;
+if (!TOKEN) {
+  console.error('❌ 環境変数 SLACK_USER_TOKEN が設定されていません');
+  process.exit(1);
+}
 
 // --- 設定 ---
 const args = process.argv.slice(2);

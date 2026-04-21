@@ -12,7 +12,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const SLACK_TOKEN = 'REDACTED_SLACK_TOKEN';
+const SLACK_TOKEN = process.env.SLACK_USER_TOKEN;
+if (!SLACK_TOKEN) {
+  console.error('❌ 環境変数 SLACK_USER_TOKEN が設定されていません');
+  process.exit(1);
+}
 const CHANNEL_ID = 'C09G8TUN4KU'; // 00_connect_rakuco-sales
 const DAYS_BACK = 7;
 const OUT_DIR = path.join(__dirname);

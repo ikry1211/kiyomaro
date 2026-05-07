@@ -11,5 +11,12 @@
   "subsidy-strategy": "補助金・助成金戦略",
   "video-automation": "動画制作自動化パイプライン",
   "youtube-automation": "YouTube長尺動画 自動編集パイプライン",
-  "youtube-channel-strategy": "YouTubeチャンネル運営戦略"
+  "youtube-channel-strategy": "YouTubeチャンネル運営戦略",
+  "report-generator": "運営分析レポート自動生成ツール",
+  "tech-blog-strategy": "テックブログ戦略",
+  "pr-strategy": "PR・情報発信戦略",
+  "sales-db": "営業データベース基盤 (sales-db)",
+  "form-sales-system": "フォーム営業の仕組み設計",
+  "marketing-lp": "マーケティング事業 フロント（LP）販売戦略",
+  "line-platform": "soct-marketing-ops"
 }

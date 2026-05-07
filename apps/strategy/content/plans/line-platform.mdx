@@ -1,0 +1,609 @@
+---
+title: soct-marketing-ops 設計書
+description: SOCT社のマーケティング運用基盤。LINE・Meta・Google Ads等の広告運用ツール群をTurborepoで管理
+---
+
+# soct-marketing-ops 設計書
+
+> **ステータス:** 企画・技術検証段階
+> **最終更新:** 2026-05-03
+> **リポジトリ:** `soct-marketing-ops`（Turborepo モノレポ）
+> **最初のアプリ:** `apps/soct-line-ops`
+> **関連:** [ゴルフパフォーマンス LINE・SNS戦略](/deals/golf-performance-sns) / [マーケティング事業計画](/business/marketing)
+
+---
+
+## 1. エグゼクティブサマリー
+
+SOCTのマーケティング事業を技術的に支える**統合運用基盤**。
+LINE・Meta・Google Ads等の広告媒体ごとにアプリを追加していくTurborepoモノレポ。
+
+### 1.1. モノレポ全体像
+
+```
+soct-marketing-ops/
+├── apps/
+│   ├── soct-line-ops/      ← 🔴 最初に構築
+│   │                         LINE配信・CV計測・分析
+│   ├── soct-meta-ops/      ← 🟡 次に検討
+│   │                         Meta Conversion API・広告レポート
+│   └── soct-google-ops/    ← 🟡 次に検討
+│                               Google Ads オフラインCV・レポート
+├── packages/
+│   ├── sgtm-client/        ← sGTMイベント送信（共通）
+│   ├── db/                 ← Supabaseスキーマ・マイグレーション
+│   ├── llm/                ← LLMラッパー（レポート生成・最適化）
+│   ├── analytics/          ← 集計・分析ロジック（共通）
+│   └── ui/                 ← 共通UIコンポーネント
+├── turbo.json
+└── package.json
+```
+
+### 1.2. soct-line-ops ロードマップ
+
+| フェーズ | 機能 | 概要 |
+|:---|:---|:---|
+| **Phase 1** | sGTMブリッジ | LINE友だち追加のCV計測基盤 |
+| **Phase 2** | 配信エンジン | ステップ配信・セグメント配信の自動化 |
+| **Phase 3** | 分析ダッシュボード | 配信効果・ファネル分析・月次レポート自動生成 |
+
+### 1.3. 将来のアプリ候補
+
+| アプリ | 概要 | 構築タイミング |
+|:---|:---|:---|
+| **soct-meta-ops** | Meta Conversion API連携。FB/IG広告のサーバーサイドCV送信、広告レポート自動生成 | クライアント案件の需要に応じて |
+| **soct-google-ops** | Google Ads オフラインコンバージョンインポート、検索語句分析、入札最適化レポート | 吉岡さんの運用で必要になったら |
+
+### 1.4. 共通パッケージの設計方針
+
+| パッケージ | 責務 | 利用するアプリ |
+|:---|:---|:---|
+| **packages/sgtm-client** | Measurement Protocol形式でsGTMにイベント送信 | soct-line-ops, soct-meta-ops, soct-google-ops |
+| **packages/db** | Supabaseスキーマ定義、マイグレーション、RLSポリシー | 全アプリ |
+| **packages/llm** | Claude/OpenAI APIのラッパー。レポート生成、メッセージ最適化 | 全アプリ |
+| **packages/analytics** | SQL集計テンプレート、KPI算出ロジック | 全アプリ |
+| **packages/ui** | shadcn/ui ベースの共通コンポーネント | 各アプリの管理画面 |
+
+> **戦略的意図:** marketing.mdx の「AIを使い倒す人力の広告運用」を技術インフラで支える。golf-performance-sns.mdx §3.3 の「弊社独自の運用ノウハウ」の実体。裏側でLLMを活用するが、クライアントには結果だけ見せる。
+
+---
+
+## 2. Phase 1: sGTMブリッジサーバー
+
+### 2.1. 背景と課題
+
+LINE友だち追加はLINEアプリ内で完結するため、**クライアントサイドGTMでは計測不可能**。
+広告クリック（Google Ads / META / LINE広告）から友だち追加までのCV計測には、サーバーサイドでの突合が必要。
+
+| 課題 | 詳細 |
+|:---|:---|
+| **Cookie断絶** | 広告LP（Webブラウザ）→ LINEアプリ間でCookieが引き継がれない |
+| **計測不能** | 友だち追加完了はLINE内で発生し、GTMタグが発火しない |
+| **広告最適化への影響** | CVデータが広告媒体に返らないため、機械学習の最適化が効かない |
+
+### 2.2. アーキテクチャ
+
+```
+広告クリック → LP（gclid/fbclid/ldtag保存）→ LIFF（友だち追加 + クリックID送信）
+                                                    │
+                                LINE Webhook（follow）│
+                                                    ▼
+                                          ┌──────────────────┐
+                                          │ Bridge Server    │
+                                          │ - Webhook受信     │
+                                          │ - 署名検証        │
+                                          │ - クリックID突合   │
+                                          └────────┬─────────┘
+                                                   │
+                                                   ▼
+                                          ┌──────────────────┐
+                                          │ sGTM Container   │
+                                          └────────┬─────────┘
+                                                   │
+                                        ┌──────────┼──────────┐
+                                        ▼          ▼          ▼
+                                   Google Ads   GA4      LINE広告 CAPI
+```
+
+### 2.3. 主要コンポーネント
+
+#### A. Webhook受信エンドポイント
+
+LINE Messaging API の follow/unfollow イベントを受信。
+
+| 項目 | 仕様 |
+|:---|:---|
+| **エンドポイント** | `POST /api/webhook/line` |
+| **署名検証** | `X-Line-Signature` ヘッダーをChannel Secretで検証（HMAC-SHA256） |
+| **対象イベント** | `follow`（友だち追加）、`unfollow`（ブロック） |
+| **レスポンス** | 200 OK を即座に返却（非同期処理） |
+
+> ⚠️ **セキュリティ要件:** 署名検証は必須。検証なしでWebhookを受け付けてはならない。
+
+#### B. クリックID保存・突合
+
+LIFF経由で取得した広告クリックIDとLINE userIDを紐付ける。
+
+| 項目 | 仕様 |
+|:---|:---|
+| **保存対象** | `gclid`（Google Ads）、`fbclid`（META）、`ldtag`（LINE広告） |
+| **突合キー** | LINE `userId` |
+| **保存先** | KVストア（TTL付き） |
+| **TTL** | 90日（gclid有効期限に合わせる） |
+| **データフロー** | LP → LocalStorage保存 → LIFF起動時にクエリパラメータとして渡す → サーバーに送信 |
+
+```
+// LIFFからサーバーへの送信ペイロード
+{
+  "lineUserId": "U1234567890abcdef",
+  "gclid": "EAIaIQobChMI...",
+  "fbclid": "IwAR3...",
+  "ldtag": "...",
+  "liffRedirectUri": "https://liff.line.me/{LIFF_ID}",
+  "timestamp": "2026-05-03T17:00:00+09:00"
+}
+```
+
+#### C. sGTMイベント送信
+
+Measurement Protocol（GA4形式）で sGTM コンテナにイベントを転送。
+
+| 項目 | 仕様 |
+|:---|:---|
+| **送信先** | `POST https://sgtm.{domain}/mp/collect` |
+| **プロトコル** | GA4 Measurement Protocol |
+| **イベント名** | `line_follow`（友だち追加）、`line_unfollow`（ブロック） |
+| **パラメータ** | `gclid`, `client_id`, `user_id`（LINE userId）, `timestamp_micros` |
+
+```
+// sGTMへの送信ペイロード（Measurement Protocol GA4形式）
+{
+  "client_id": "LINE_U1234567890abcdef",
+  "user_id": "U1234567890abcdef",
+  "timestamp_micros": 1778094000000000,
+  "events": [{
+    "name": "line_follow",
+    "params": {
+      "gclid": "EAIaIQobChMI...",
+      "source": "line",
+      "medium": "social",
+      "campaign": "futara_games_launch"
+    }
+  }]
+}
+```
+
+#### D. LIFFランディングページ
+
+友だち追加導線 + クリックIDをサーバーに送信するフロントエンド。
+
+| 項目 | 仕様 |
+|:---|:---|
+| **LIFF SDK** | `@line/liff` v2.x |
+| **処理フロー** | ① LIFF初期化 → ② URLからクリックID取得 → ③ サーバーに送信 → ④ 友だち追加画面へリダイレクト |
+| **フォールバック** | LIFF外アクセス時はWebブラウザでLP表示 + QRコード表示 |
+
+### 2.4. sGTMコンテナ側の設定
+
+| 設定項目 | 内容 |
+|:---|:---|
+| **Client** | Measurement Protocol (GA4) Client — `line_follow` イベントをクレーム |
+| **Trigger** | Custom Event: `event_name == "line_follow"` |
+| **Tags** | ① GA4 Tag（GA4プロパティに送信）② Google Ads Conversion Tag（gclid突合でCV計上）③ LINE広告 CAPI Tag（Conversion API送信） |
+
+> **Enhanced Conversions:** ハッシュ化したメールアドレス・電話番号を送信することで、gclid不一致時のフォールバック突合が可能。LINE Profile APIからメールアドレスを取得できる場合に有効。
+
+### 2.5. LINE広告 CAPI（Conversion API）連携
+
+2026年4月にLINE広告とYahoo!ディスプレイ広告が統合され「LINEヤフー広告」に。CAPI仕様もアップデート。
+
+| 項目 | 仕様 |
+|:---|:---|
+| **API** | LINEヤフー広告 Conversion API |
+| **認証** | ビジネスマネージャーのアクセストークン |
+| **送信データ** | イベントタイプ、タイムスタンプ、ハッシュ化PII（email/phone） |
+| **重複排除** | `event_id` + `ldtag` でデデュプリケーション |
+| **併用方針** | LINE Tag（クライアントサイド）と CAPI（サーバーサイド）を併用し、計測精度を最大化 |
+
+---
+
+## 3. Phase 2: 配信エンジン
+
+### 3.1. 機能要件
+
+L-STEP等の外部ツールを使わず、LINE Messaging APIで直接配信を制御する。
+
+| 機能 | 概要 | 優先度 |
+|:---|:---|:---|
+| **セグメント配信** | タグ・属性・行動履歴に基づくターゲティング配信 | 🔴 高 |
+| **ステップ配信** | 友だち追加後の自動シナリオ配信（Day 0, 1, 3, 7...） | 🔴 高 |
+| **リッチメニュー切替** | ユーザー属性に応じたリッチメニューの動的切替 | 🟡 中 |
+| **一斉配信** | 全友だちへの配信（管理画面の代替） | 🟡 中 |
+| **1:1チャット** | 手動応対（管理画面併用で可） | 🟢 低 |
+
+### 3.2. データモデル（ユーザーDB）
+
+```sql
+-- 友だち情報
+CREATE TABLE line_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  line_user_id TEXT UNIQUE NOT NULL,
+  display_name TEXT,
+  picture_url TEXT,
+  status TEXT DEFAULT 'active', -- active / blocked
+  followed_at TIMESTAMPTZ NOT NULL,
+  blocked_at TIMESTAMPTZ,
+  -- 広告突合
+  gclid TEXT,
+  fbclid TEXT,
+  ldtag TEXT,
+  -- 属性
+  tags JSONB DEFAULT '[]',
+  custom_fields JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 配信シナリオ
+CREATE TABLE step_scenarios (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id UUID NOT NULL, -- LINE公式アカウント
+  name TEXT NOT NULL,
+  trigger_event TEXT NOT NULL, -- 'follow', 'tag_added', 'custom'
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ステップ配信メッセージ
+CREATE TABLE step_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  scenario_id UUID REFERENCES step_scenarios(id),
+  delay_minutes INTEGER NOT NULL, -- トリガーからの遅延（分）
+  message_type TEXT NOT NULL, -- 'text', 'flex', 'image', 'video'
+  message_payload JSONB NOT NULL, -- Messaging API のメッセージオブジェクト
+  sort_order INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 配信ログ
+CREATE TABLE delivery_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  line_user_id TEXT NOT NULL,
+  scenario_id UUID,
+  message_id UUID,
+  message_type TEXT NOT NULL, -- 'step', 'segment', 'broadcast'
+  status TEXT NOT NULL, -- 'sent', 'failed', 'scheduled'
+  sent_at TIMESTAMPTZ,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### 3.3. ステップ配信の実行フロー
+
+```
+1. follow Webhook受信
+2. line_users に INSERT
+3. step_scenarios からトリガー = 'follow' のシナリオを取得
+4. step_messages を delay_minutes 順に取得
+5. 各メッセージを delay 後にキューに投入
+6. キューワーカーが Messaging API Push Message を実行
+7. delivery_logs に結果を記録
+```
+
+> **キュー実装:** Vercel Cron + KV / Upstash QStash / Cloud Tasks のいずれか。
+> 遅延実行が必要なため、単純なHTTPリクエストではなくキューベースの設計が必須。
+
+### 3.4. LLM活用（SOCT内部のみ）
+
+| 活用箇所 | 内容 | クライアントへの見せ方 |
+|:---|:---|:---|
+| **メッセージ生成** | 配信テンプレートのパーソナライズ生成 | 「独自の運用ノウハウ」 |
+| **セグメント提案** | ユーザー行動データから最適セグメントを提案 | 「データに基づく分析」 |
+| **配信タイミング最適化** | 開封率データからの最適送信時刻推定 | 「独自の分析手法」 |
+| **レポート自動生成** | 月次レポートのナラティブ生成 | 「専門コンサルタントによる分析」 |
+
+---
+
+## 4. Phase 3: 分析ダッシュボード
+
+### 4.1. 機能要件
+
+| 機能 | 概要 | データソース |
+|:---|:---|:---|
+| **友だち数推移** | 日次/月次の友だち増減グラフ | line_users テーブル |
+| **ファネル分析** | 広告クリック → LP → LIFF → 友だち追加 の転換率 | KVストア + line_users |
+| **配信効果** | 配信ごとの開封率・クリック率・ブロック率 | Messaging API Insight + delivery_logs |
+| **セグメント分析** | タグ別・属性別の行動傾向 | line_users + delivery_logs |
+| **月次レポート** | PDF/HTML形式の自動生成レポート | 全テーブル + LLM |
+| **広告ROAS** | gclid/fbclid別のCV数・CPA算出 | line_users（広告突合データ） |
+
+### 4.2. レポート自動生成（LLM連携）
+
+```
+1. 月末にCronで集計SQLを実行
+2. 集計結果をLLM（Claude/GPT）に投入
+3. ナラティブ形式のレポートを生成
+4. PDF/HTMLに変換
+5. クライアントにメール or Slack通知
+```
+
+> **golf-performance-sns.mdx §3.3 との整合:** 「分析レポート → SOCT独自 → 月次で共有」の方針をそのまま実装。
+
+---
+
+## 5. 技術スタック
+
+### 5.1. モノレポ共通
+
+| レイヤー | 選定 | 理由 |
+|:---|:---|:---|
+| **モノレポ** | Turborepo | tetra-lms と同じ構成。キャッシュ・並列ビルド |
+| **DB** | Supabase (PostgreSQL) | 既存のSupabase契約を活用。RLSでマルチテナント対応 |
+| **KVストア** | Upstash Redis | クリックID突合等の一時データ。TTL管理が容易 |
+| **キュー** | Upstash QStash | 遅延実行・スケジュール配信。Vercel環境との相性◎ |
+| **sGTM** | Google Cloud Run | sGTMコンテナのホスティング（Stape等のマネージドも検討） |
+| **LLM** | Claude API / OpenAI API | レポート生成・メッセージ最適化 |
+
+### 5.2. apps/line 固有
+
+| レイヤー | 選定 | 理由 |
+|:---|:---|:---|
+| **ランタイム** | Vercel Edge Functions | Webhookの低レイテンシ受信 |
+| **フロントエンド** | Next.js（App Router） | LIFF LP + 管理画面 |
+| **LINE SDK** | `@line/bot-sdk`, `@line/liff` | Webhook署名検証、LIFF初期化 |
+
+### 5.3. 将来の apps/meta 固有（参考）
+
+| レイヤー | 選定 | 理由 |
+|:---|:---|:---|
+| **ランタイム** | Vercel Serverless Functions | Meta CAPI送信 |
+| **Meta SDK** | `facebook-nodejs-business-sdk` | Conversion API, Marketing API |
+
+### 5.4. マルチテナント設計
+
+全アプリ共通で、クライアント（広告アカウント）単位の管理を行う。
+
+```sql
+-- 共通: クライアント管理（packages/db）
+CREATE TABLE clients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL, -- 「Futara Games」「ゴルフパフォーマンス」等
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- apps/line 固有
+CREATE TABLE line_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID REFERENCES clients(id),
+  channel_id TEXT UNIQUE NOT NULL,
+  channel_secret TEXT NOT NULL, -- 暗号化して保存
+  channel_access_token TEXT NOT NULL, -- 暗号化して保存
+  sgtm_endpoint TEXT,
+  liff_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- apps/meta 固有（将来）
+CREATE TABLE meta_ad_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID REFERENCES clients(id),
+  pixel_id TEXT NOT NULL,
+  access_token TEXT NOT NULL, -- 暗号化して保存
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+> `client_id` で全テーブルを横断的に紐付け。RLS でクライアント単位のアクセス制御を行う。
+
+---
+
+## 6. 技術検証の優先順位
+
+| # | 検証項目 | 判定基準 | 推定工数 |
+|:---|:---|:---|:---|
+| 1 | **LINE Messaging API の Webhook 受信 + 署名検証** | Vercel Edge Functions で follow イベントを受信できること | 2h |
+| 2 | **LIFF 経由での gclid 取得 + LINE userID との紐付け** | LIFF起動 → URLパラメータからgclid取得 → サーバー送信が動作すること | 4h |
+| 3 | **sGTM コンテナへのイベント送信** | Measurement Protocol で sGTM に送信し、GA4 でイベントが確認できること | 4h |
+| 4 | **Google Ads Conversion Tag の発火** | sGTM 経由で Google Ads にCVが計上されること | 2h |
+| 5 | **Enhanced Conversions（ハッシュ化PII）** | メールアドレスハッシュでの突合が機能すること | 2h |
+| 6 | **LINE広告 CAPI 送信** | LINEヤフー広告の管理画面でCVが確認できること | 4h |
+| 7 | **ステップ配信（遅延実行）** | QStash でのスケジュール配信が正しく動作すること | 4h |
+
+> **Phase 1（#1〜#6）の合計:** 約18時間。1週間で検証可能。
+
+---
+
+## 7. ユースケース
+
+### 7.1. 初期ターゲット
+
+| ユースケース | アカウント | ステータス |
+|:---|:---|:---|
+| **Futara Games** LINE公式アカウントの友だち追加計測 | 自社 | 最優先（PoCターゲット） |
+| **ゴルフパフォーマンス** LINE運用 | クライアント | 案件確定後（§ golf-performance-sns.mdx #5参照） |
+
+### 7.2. 汎用化の方向性
+
+- クライアント案件でのLINE友だち追加コンバージョン計測（マーケティング事業 Layer 2のサービスメニューに統合）
+- SOCT コンサルティング事業でのLINE活用提案の裏側インフラ
+
+---
+
+## 8. 競合分析と機能要件
+
+### 8.1. 主要競合ツール
+
+| ツール | 月額（税込） | ポジション | 主な強み |
+|:---|:---|:---|:---|
+| **L-STEP** | ¥0〜32,780 | 業界最大シェア。定番 | 機能網羅性、情報量の多さ、コミュニティ |
+| **エルメ（L Message）** | ¥0〜33,000 | コスパ重視。無料プランが充実 | 予約・決済が無料で使える、初心者向け |
+| **Liny** | 要問合せ | エンタープライズ向け | Salesforce連携、スタッフ無制限、官公庁実績 |
+| **Poster** | 要問合せ | 実店舗特化 | クーポン、スタンプラリー、Beacon来店計測 |
+| **UTAGE** | ¥9,700〜 | オールインワン型 | メルマガ・会員サイト・LP・ウェビナーまで一元管理 |
+| **プロラインフリー** | ¥0〜29,040 | 無料で始められる | 無料プランでステップ配信可能 |
+| **L-ad** | 要問合せ | CV計測特化 | 広告×LINE友だち追加の計測精度 |
+| **アドエビス** | ¥50,000〜 | 大企業向け計測基盤 | マルチチャネル横断分析 |
+
+### 8.2. 機能別比較マトリクス
+
+#### 配信機能
+
+| 機能 | L-STEP | エルメ | Liny | soct-line-ops |
+|:---|:---|:---|:---|:---|
+| **ステップ配信（シナリオ）** | ◎ 全プラン | ◎ 全プラン | ◎ | ◎ **+ LLMでシナリオ自動改善** |
+| **セグメント配信** | ◎ 全プラン | ◎ 全プラン | ◎ | ◎ **+ 広告流入データで絞り込み** |
+| **一斉配信** | ◎ | ◎ | ◎ | ○（管理画面併用で可） |
+| **リマインダ配信** | ◎ | ◎ | ◎ | ◎ |
+| **自動応答（キーワード）** | ◎ | ◎ | ◎ | ◎ **+ LLMで自然言語応答** |
+| **条件分岐（行動トリガー）** | ◎ | ◎ | ◎ | ◎ **+ 任意のカスタムイベント対応** |
+| **配信タイミング最適化** | ✕ | ✕ | ✕ | ◎ **LLMで開封率ベースの最適時刻推定** |
+| **メッセージのパーソナライズ生成** | ✕ | ✕ | ✕ | ◎ **LLM自動生成** |
+
+#### ユーザー管理・CRM
+
+| 機能 | L-STEP | エルメ | Liny | soct-line-ops |
+|:---|:---|:---|:---|:---|
+| **タグ管理** | ◎ | ◎ | ◎ | ◎ |
+| **カスタムフィールド（友だち情報）** | ◎ | ◎ | ◎ | ◎（JSONB で柔軟に拡張） |
+| **回答フォーム** | ◎ | ◎ | ◎ | ◎ |
+| **リッチメニュー切替** | ◎（スタンダード〜） | ◎ | ◎ | ◎ |
+| **1:1チャット** | ◎ | ◎ | ◎ | △（管理画面併用。独自UIは後回し） |
+| **オペレーター管理** | ◎ | ◎ | ◎（無制限） | △（Phase 3以降） |
+| **スタッフ権限管理** | ◎（プロプラン〜） | ◎ | ◎ | △（Phase 3以降） |
+| **外部CRM連携** | ◎（プロプラン・API） | △ | ◎（Salesforce等） | ◎（Supabase直結。自由にクエリ可能） |
+
+#### 分析・計測
+
+| 機能 | L-STEP | エルメ | Liny | soct-line-ops |
+|:---|:---|:---|:---|:---|
+| **流入経路分析** | ◎（プロプラン〜） | ◎ | ◎ | ◎ **+ gclid/fbclid突合で広告ROASまで** |
+| **URLクリック計測** | ◎ | ◎ | ◎ | ◎ |
+| **コンバージョン計測** | △（LINE内のみ） | △ | △ | ◎ **sGTM → Google Ads/GA4/LINE CAPI** |
+| **クロス分析** | ◎（プロプラン〜） | ◎ | ◎ | ◎ **SQLで自由にクエリ** |
+| **ファネル分析** | ◎（プロプラン〜） | △ | △ | ◎ **広告クリック→LP→LIFF→友だち追加→CV** |
+| **月次レポート自動生成** | ✕ | ✕ | ✕ | ◎ **LLMでナラティブ生成** |
+| **A/Bテスト** | △（手動） | △ | △ | ◎ **自動バリアント配分 + 勝者判定** |
+
+#### 予約・決済
+
+| 機能 | L-STEP | エルメ | Liny | soct-line-ops |
+|:---|:---|:---|:---|:---|
+| **カレンダー予約** | ◎ | ◎（無料プラン可） | ◎ | ✕（Phase 3以降で検討） |
+| **決済連携（Stripe等）** | △ | ◎（Stripe連携） | △ | ✕（不要。Tetra LMSやクライアント側で処理） |
+| **ウェビナー・会員サイト** | ✕ | ✕ | ✕ | ✕（スコープ外。UTAGEの領域） |
+
+#### プラットフォーム
+
+| 機能 | L-STEP | エルメ | Liny | soct-line-ops |
+|:---|:---|:---|:---|:---|
+| **マルチアカウント管理** | △（アカウント別契約） | △ | ○ | ◎ **マルチテナント設計** |
+| **API連携** | ◎（プロプラン〜） | △ | ◎ | ◎ **全データがSupabaseで直接アクセス可能** |
+| **Webhook転送** | ◎（プロプラン〜） | △ | ◎ | ◎（自社Webhookなので当然） |
+| **データポータビリティ** | △（ロックイン） | △ | △ | ◎ **全データが自社DB** |
+| **月額コスト** | ¥32,780（プロ） | ¥33,000（プロ） | 要問合せ | **≒ ¥0**（インフラ費のみ） |
+
+### 8.3. soct-line-ops 機能要件（優先度付き）
+
+競合調査から抽出した全機能を、soct-line-opsとしての実装優先度で整理。
+
+#### 🔴 Phase 1 必須（CV計測基盤）
+
+| # | 機能 | 競合での対応 | soct-line-opsでの差別化 |
+|:---|:---|:---|:---|
+| 1 | Webhook受信 + 署名検証 | 全ツール内部で処理 | — |
+| 2 | 友だち追加/ブロック管理 | 全ツール | 広告クリックIDとの突合 |
+| 3 | 流入経路分析 | L-STEP プロプラン〜 | gclid/fbclid/ldtag で広告媒体別ROAS算出 |
+| 4 | sGTMイベント送信 | L-ad/アドエビスのみ | Google Ads/GA4/LINE CAPI への統合送信 |
+| 5 | LIFFランディングページ | 一部ツール | 友だち追加 + クリックID取得の導線 |
+
+#### 🔴 Phase 2 必須（配信エンジン）
+
+| # | 機能 | 競合での対応 | soct-line-opsでの差別化 |
+|:---|:---|:---|:---|
+| 6 | ステップ配信 | 全ツール | LLMによるシナリオ自動改善・A/Bテスト |
+| 7 | セグメント配信 | 全ツール | 広告流入データ × ユーザー属性のクロスセグメント |
+| 8 | タグ管理 | 全ツール | 自動タグ付け（行動ベース + LLM推定） |
+| 9 | 自動応答（キーワード） | 全ツール | LLMによる自然言語応答 |
+| 10 | リッチメニュー動的切替 | スタンダード〜 | ユーザー属性に応じた自動切替 |
+| 11 | 回答フォーム | 全ツール | 回答をカスタムフィールドに自動保存 |
+| 12 | URLクリック計測 | 全ツール | クリックをアクショントリガーとして連携 |
+| 13 | リマインダ配信 | 全ツール | — |
+| 14 | 配信タイミング最適化 | **競合にない** | 開封率データからLLMで最適送信時刻を推定 |
+| 15 | メッセージパーソナライズ | **競合にない** | ユーザー属性に応じたLLM動的生成 |
+
+#### 🟡 Phase 3 推奨（分析・運用高度化）
+
+| # | 機能 | 競合での対応 | soct-line-opsでの差別化 |
+|:---|:---|:---|:---|
+| 16 | クロス分析 | L-STEP プロプラン | SQLで自由にクエリ。LLMで自然言語分析 |
+| 17 | ファネル分析 | L-STEP プロプラン | 広告→LP→LIFF→友だち追加→配信→CVの全ファネル |
+| 18 | 月次レポート自動生成 | **競合にない** | LLMナラティブ + PDF/HTML出力 |
+| 19 | A/Bテスト自動化 | **競合にない** | バリアント自動配分 + 統計的勝者判定 |
+| 20 | コンバージョン管理 | L-STEP | sGTM経由でGoogle Ads CVと統合 |
+
+#### 🟢 Phase 4 将来検討
+
+| # | 機能 | 判断基準 |
+|:---|:---|:---|
+| 21 | カレンダー予約 | クライアントの需要次第。エルメの予約機能が強力なので、優先度は低い |
+| 22 | 決済連携 | 不要。Tetra LMSやクライアント側の決済基盤を利用 |
+| 23 | スタッフ権限管理 | マルチテナント運用が本格化したら |
+| 24 | オペレーター機能 | クライアント担当者がチャット対応する場合 |
+| 25 | スマホアプリ | 需要が見えてから |
+
+### 8.4. 競合にない soct-line-ops 独自機能（LLM差別化）
+
+| 独自機能 | 内容 | クライアントへの見せ方 |
+|:---|:---|:---|
+| **配信メッセージ自動生成** | ユーザー属性×過去の反応データからLLMがメッセージをパーソナライズ生成 | 「弊社独自の運用ノウハウ」 |
+| **配信タイミング最適化** | 開封率データから最適な送信時刻・曜日をLLMが推定 | 「データに基づく分析」 |
+| **シナリオ自動改善** | ステップ配信のCVR・離脱率をLLMが分析し、改善案を自動提案 | 「専門チームによる継続改善」 |
+| **月次レポート自動生成** | 全KPIを集計し、LLMがナラティブ形式のレポートをPDF/HTML出力 | 「専門コンサルタントの分析レポート」 |
+| **自然言語チャットボット** | キーワード一致ではなくLLMで文脈を理解した自動応答 | 「高品質な自動応答」 |
+| **広告ROAS統合分析** | gclid/fbclid突合で「広告費→友だち追加→CV」の一気通貫ROAS | 「広告とLINEを直結した分析」 |
+| **A/Bテスト自動化** | メッセージ・配信時刻のバリアント自動配分→統計判定→勝者自動採用 | 「科学的な効果検証」 |
+
+> **結論:** L-STEPプロプラン（¥32,780/月）相当の全機能をカバーしつつ、LLM活用による7つの独自機能で**価格は≒¥0、機能は上位互換**を実現する。複数クライアントに展開すれば、L-STEPライセンス費の削減分（1社¥32,780/月 × N社）がそのまま粗利になる。
+
+---
+
+## 9. リスクと対策
+
+| リスク | 深刻度 | 対策 |
+|:---|:---|:---|
+| **LINE API仕様変更** | 🟡 | Messaging API v2 は安定。LINE Developers のリリースノートを定期確認 |
+| **sGTMコンテナの運用コスト** | 🟡 | Cloud Run の最小インスタンス設定で月$10〜30程度。Stape（マネージド）なら$20/月 |
+| **gclid突合率の低さ** | 🟡 | Enhanced Conversions（ハッシュ化PII）でフォールバック。LIFFでのメールアドレス取得を検討 |
+| **Webhook の信頼性** | 🟡 | リトライ機構の実装。LINE Platform は最大3回リトライする仕様 |
+| **開発工数の肥大化** | 🔴 | Phase 1（CV計測）を最小構成でリリースし、Phase 2以降は案件の需要に応じて段階的に開発 |
+| **APPI（個人情報保護法）** | 🟡 | LINE userIDの取り扱いをプライバシーポリシーに明記。ハッシュ化PIIの適切な管理 |
+
+---
+
+## 10. 次のステップ
+
+### 10.1. モノレポ初期化
+
+| # | アクション | 担当 | 期限 |
+|:---|:---|:---|:---|
+| 1 | GitHub に `soctllc/soct-marketing-ops` リポジトリ作成 | 池田 | — |
+| 2 | Turborepo 初期化 + `apps/soct-line-ops` + `packages/` の雛形作成 | 池田 | — |
+| 3 | Supabase プロジェクト作成 + `packages/db` にスキーマ定義 | 池田 | — |
+
+### 10.2. soct-line-ops Phase 1（CV計測基盤）
+
+| # | アクション | 担当 | 期限 |
+|:---|:---|:---|:---|
+| 4 | LINE Developers でチャネル作成（Futara Games用） | 池田 | — |
+| 5 | Webhook受信 + 署名検証のPoC（Vercel Edge Functions） | 池田 | — |
+| 6 | LIFF アプリの作成 + gclid取得テスト | 池田 | — |
+| 7 | sGTMコンテナのセットアップ（Cloud Run or Stape） | 池田 | — |
+| 8 | Phase 1 の結合テスト（広告クリック → 友だち追加 → GA4でCV確認） | 池田 | — |
+
+### 10.3. 拡張
+
+| # | アクション | 担当 | 期限 |
+|:---|:---|:---|:---|
+| 9 | ゴルフパフォーマンス案件への適用判断 | 池田 + 吉岡 | 案件確定後 |
+| 10 | `soct-meta-ops` の要件定義 + 構築 | 池田 | クライアント需要に応じて |
